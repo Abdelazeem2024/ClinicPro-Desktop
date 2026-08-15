@@ -1,7 +1,7 @@
 import { useState } from "react"
 import {
   LayoutDashboard, Users, UserPlus, Settings,
-  Moon, Sun, Search, FileText
+  Moon, Sun, Search, FileText, Gift
 } from "lucide-react"
 import { useApp } from "./context/AppContext"
 import Dashboard from "./pages/Dashboard"
@@ -9,9 +9,11 @@ import PatientsPage from "./pages/PatientsPage"
 import VisitPage from "./pages/VisitPage"
 import ReportsPage from "./pages/ReportsPage"
 import SettingsPage from "./pages/SettingsPage"
+import RewardsPage from "./pages/RewardsPage"
+import DevCredit from "./components/DevCredit"
 import { APP_VERSION } from "./types"
 
-type Page = "dashboard" | "patients" | "visit" | "reports" | "settings"
+type Page = "dashboard" | "patients" | "visit" | "reports" | "settings" | "rewards"
 
 export default function App() {
   const { settings, isDark, updateSettings } = useApp()
@@ -27,6 +29,7 @@ export default function App() {
     { id: "patients" as Page, label: "المرضى", icon: <Users size={18} /> },
     { id: "visit" as Page, label: "دخول مريض", icon: <UserPlus size={18} /> },
     { id: "reports" as Page, label: "التقارير", icon: <FileText size={18} /> },
+    { id: "rewards" as Page, label: "مكافآتي", icon: <Gift size={18} /> },
     { id: "settings" as Page, label: "الإعدادات", icon: <Settings size={18} /> },
   ]
 
@@ -92,9 +95,10 @@ export default function App() {
             </button>
           ))}
           <div style={{ flex: 1 }} />
-          <div className="text-sm text-muted" style={{ textAlign: "center", padding: 8 }}>
+          <div className="text-sm text-muted" style={{ textAlign: "center", padding: "0 8px 4px" }}>
             Clinic Pro v{APP_VERSION}
           </div>
+          <DevCredit />
         </nav>
 
         <main className="main-content">
@@ -102,6 +106,7 @@ export default function App() {
           {page === "patients" && <PatientsPage initialSearch={globalSearch} />}
           {page === "visit" && <VisitPage />}
           {page === "reports" && <ReportsPage />}
+          {page === "rewards" && <RewardsPage />}
           {page === "settings" && <SettingsPage />}
         </main>
       </div>

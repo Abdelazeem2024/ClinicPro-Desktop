@@ -228,3 +228,26 @@ body {
 .alert-success { background: #D1FAE5; color: #047857; }
 [data-theme="dark"] .alert-warning { background: #78350F44; color: #FBBF24; }
 [data-theme="dark"] .alert-success { background: #064E3B44; color: #34D399; }
+
+/* ── شارة "Developed by Raqnova" اللامعة ─────────────────── */
+.dev-credit-shimmer {
+  font-size: 12.5px;
+  font-weight: 500;
+  background: linear-gradient(100deg,
+    var(--text-muted) 20%, var(--text-muted) 40%,
+    #7FE0FF 48%, #FFFFFF 52%, #7FE0FF 56%,
+    var(--text-muted) 64%, var(--text-muted) 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: dev-credit-shine 4.5s linear infinite;
+}
+.dev-credit-shimmer strong { font-weight: 800; }
+@keyframes dev-credit-shine {
+  0% { background-position: 220% 0; }
+  100% { background-position: -30% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dev-credit-shimmer { animation: none; }
+}
