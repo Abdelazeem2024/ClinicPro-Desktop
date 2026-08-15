@@ -26,12 +26,14 @@ jobs:
       - name: بناء وتغليف البرنامج (electron-builder)
         run: npm run electron:build
         env:
+          # يمنع electron-builder من محاولة النشر تلقائيًا لأي مكان
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: رفع ملف التثبيت الناتج
         uses: actions/upload-artifact@v4
         with:
           name: ClinicPro-Windows-Installer
+          # يلتقط ملفات .exe الناتجة (installer NSIS) من مجلد release
           path: |
             release/*.exe
           if-no-files-found: error
