@@ -21,7 +21,7 @@ jobs:
           node-version: 20
 
       - name: تثبيت الحزم
-        run: npm ci
+        run: npm install
 
       - name: بناء وتغليف البرنامج (electron-builder)
         run: npm run electron:build
