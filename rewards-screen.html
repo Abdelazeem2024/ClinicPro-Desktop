@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>مكافآتي — Agri Plus</title>
+
+<!--
+  ملاحظة للمطوّر: الخطوط هنا محمّلة من Google Fonts للمعاينة فقط.
+  لنسخة سطح المكتب الفعلية (Electron)، حمّل نفس الخطوط محليًا وضعها في
+  مجلد fonts/ داخل المشروع مثل ما فعلنا مع خط Cairo في ClinicPro، حتى
+  يعمل البرنامج بدون إنترنت بالكامل.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@300;400;500;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --radius-lg: 22px;
+    --radius-md: 16px;
+    --radius-sm: 10px;
+    --ease: cubic-bezier(.22,.9,.3,1);
+  }
+
+  /* ── الوضع الداكن (افتراضي) ───────────────────────────── */
+  html[data-theme="dark"] {
+    --bg: #0A130E;
+    --bg-soft: #0E1B14;
+    --card: #13221A;
+    --card-2: #16281F;
+    --card-border: #21382B;
+    --text: #F2F6F2;
+    --text-muted: #91A99C;
+    --primary: #33C67E;
+    --primary-strong: #22A667;
+    --primary-soft: rgba(51,198,126,.14);
+    --gold: #ECC661;
+    --gold-strong: #CE9F3E;
+    --gold-soft: rgba(236,198,97,.14);
+    --shadow-card: 0 18px 50px -12px rgba(0,0,0,.55);
+    --shadow-soft: 0 8px 24px -8px rgba(0,0,0,.4);
+    --divider: #1E2E25;
+  }
+
+  /* ── الوضع الفاتح ──────────────────────────────────────── */
+  html[data-theme="light"] {
+    --bg: #F6FAF5;
+    --bg-soft: #FFFFFF;
+    --card: #FFFFFF;
+    --card-2: #FBFDF9;
+    --card-border: #E3EAE0;
+    --text: #142018;
+    --text-muted: #5F7669;
+    --primary: #1C8F58;
+    --primary-strong: #146B41;
+    --primary-soft: rgba(28,143,88,.09);
+    --gold: #B4881F;
+    --gold-strong: #8E6A18;
+    --gold-soft: rgba(180,136,31,.10);
+    --shadow-card: 0 14px 40px -14px rgba(20,32,24,.16);
+    --shadow-soft: 0 6px 18px -6px rgba(20,32,24,.10);
+    --divider: #EAEFE8;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    transition: background .35s var(--ease), color .35s var(--ease);
+  }
+
+  body {
+    font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 28px 16px 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .screen {
+    width: 100%;
+    max-width: 460px;
+    position: relative;
+  }
+
+  /* ── شريط علوي: تبديل الوضع ───────────────────────────── */
+  .topbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 6px;
+  }
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--text-muted);
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 12.5px;
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    transition: all .2s var(--ease);
+  }
+  .theme-toggle:hover { color: var(--text); border-color: var(--primary); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .theme-toggle svg { width: 15px; height: 15px; }
+
+  /* ── الرأس ─────────────────────────────────────────────── */
+  .header { text-align: center; margin: 10px 0 30px; }
+  .header-title {
+    font-family: 'Almarai', 'Tajawal', sans-serif;
+    font-weight: 800;
+    font-size: 34px;
+    letter-spacing: -0.5px;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .gift-badge {
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    background: linear-gradient(155deg, var(--gold-soft), var(--primary-soft));
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-soft);
+  }
+  .header-sub {
+    margin: 10px 0 0;
+    color: var(--text-muted);
+    font-size: 14.5px;
+    font-weight: 400;
+  }
+
+  /* ── بطاقات المستويات + خط النمو (العنصر المميّز) ────────── */
+  .tiers-wrap { position: relative; margin-bottom: 30px; }
+
+  .vine-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+  .tiers {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .tier-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-md);
+    padding: 16px 10px 14px;
+    text-align: center;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: transform .25s var(--ease), border-color .25s var(--ease);
+  }
+  .tier-card:hover { transform: translateY(-3px); border-color: var(--primary); }
+
+  .tier-node {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+  }
+  .tier-card[data-tier="2"] .tier-node { background: var(--primary-soft); }
+  .tier-card[data-tier="3"] .tier-node {
+    background: linear-gradient(155deg, var(--gold), var(--gold-strong));
+    border-color: var(--gold-strong);
+    color: #201607;
+  }
+
+  .tier-label {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.35;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+  }
+
+  .tier-reward {
+    font-family: 'Almarai', sans-serif;
+    font-weight: 800;
+    font-size: 14.5px;
+    color: var(--gold-strong);
+    line-height: 1.3;
+  }
+  html[data-theme="dark"] .tier-reward { color: var(--gold); }
+
+  /* ── قسم كود الدعوة ────────────────────────────────────── */
+  .code-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    padding: 22px 20px;
+    box-shadow: var(--shadow-card);
+    margin-bottom: 22px;
+  }
+  .code-title {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+    font-weight: 500;
+  }
+  .code-row { display: flex; gap: 10px; align-items: stretch; }
+  .code-box {
+    flex: 1;
+    background: var(--bg-soft);
+    border: 1.5px dashed var(--card-border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 21px;
+    letter-spacing: 1.5px;
+    direction: ltr;
+    background: linear-gradient(180deg, var(--primary-soft), transparent 70%), var(--bg-soft);
+    color: var(--text);
+  }
+  .copy-btn {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    min-width: 92px;
+    background: linear-gradient(155deg, var(--primary-strong), var(--primary));
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'Tajawal', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform .15s var(--ease), box-shadow .2s var(--ease);
+    box-shadow: 0 8px 20px -6px var(--primary-soft);
+  }
+  .copy-btn:hover { transform: translateY(-1px); }
+  .copy-btn:active { transform: translateY(0); }
+  .copy-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .copy-btn svg { width: 16px; height: 16px; transition: transform .25s var(--ease); }
+  .copy-btn.copied { background: linear-gradient(155deg, var(--gold-strong), var(--gold)); color: #201607; }
+
+  .code-meta {
+    margin: 14px 0 0;
+    padding-top: 14px;
+    border-top: 1px dashed var(--divider);
+    display: grid;
+    gap: 6px;
+  }
+  .code-meta li {
+    list-style: none;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 7px;
+    align-items: flex-start;
+    line-height: 1.5;
+  }
+  .code-meta li::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--primary);
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+  .code-meta { margin-inline-start: 0; padding-inline-start: 0; }
+
+  /* ── سطر تشجيعي ───────────────────────────────────────── */
+  .encourage {
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin: 0 6px 26px;
+  }
+  .encourage strong { color: var(--text); font-weight: 700; }
+
+  /* ── فوتر: ملاحظة الاحتساب + التواصل ─────────────────────── */
+  .foot-divider { border: none; border-top: 1px solid var(--divider); margin: 0 0 18px; }
+
+  .fineprint {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    opacity: .85;
+    margin: 0 8px 22px;
+  }
+
+  .contact-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-decoration: none;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    padding: 11px 18px;
+    box-shadow: var(--shadow-soft);
+    width: fit-content;
+    margin: 0 auto;
+    transition: border-color .2s var(--ease), transform .2s var(--ease);
+  }
+  .contact-pill:hover { border-color: var(--primary); transform: translateY(-1px); }
+  .contact-pill:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+  .wa-icon {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .wa-icon svg { width: 14px; height: 14px; fill: #fff; }
+  .contact-text { display: flex; flex-direction: column; gap: 1px; align-items: flex-start; }
+  .contact-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+    direction: ltr;
+  }
+  .contact-label {
+    font-size: 10.5px;
+    color: var(--primary);
+    font-weight: 700;
+  }
+  html[data-theme="light"] .contact-label { color: var(--primary-strong); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  @media (max-width: 380px) {
+    .header-title { font-size: 27px; }
+    .tier-label { font-size: 11.5px; min-height: 40px; }
+    .code-box { font-size: 17px; }
+  }
+
+  /* ── شارة "Developed by Raqnova" اللامعة ─────────────────── */
+  .dev-credit-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+  }
+  .dev-credit {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 999px;
+    transition: background .2s var(--ease);
+  }
+  .dev-credit:hover { background: var(--card); }
+  .dev-credit:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .dev-credit-text {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: .2px;
+    background: linear-gradient(100deg,
+      var(--text-muted) 20%, var(--text-muted) 40%,
+      #7FE0FF 48%, #FFFFFF 52%, #7FE0FF 56%,
+      var(--text-muted) 64%, var(--text-muted) 100%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 4.5s linear infinite;
+  }
+  .dev-credit-text strong { font-weight: 800; }
+  @keyframes shimmer {
+    0% { background-position: 220% 0; }
+    100% { background-position: -30% 0; }
+  }
+
+  /* ── نافذة التواصل مع المطوّر (Raqnova) ───────────────────── */
+  .dev-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 10, 8, .55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+  }
+  .dev-modal-overlay[hidden] { display: none !important; }
+
+  .dev-modal {
+    width: 100%;
+    max-width: 300px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 22px 18px 18px;
+    position: relative;
+    text-align: center;
+    animation: pop-in .2s var(--ease);
+  }
+  @keyframes pop-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+
+  .dev-modal-close {
+    position: absolute;
+    top: 10px; left: 10px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--card-border);
+    background: var(--bg-soft);
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dev-modal-close:hover { color: var(--text); border-color: #4FB6E0; }
+  .dev-modal-close:focus-visible { outline: 2px solid #4FB6E0; outline-offset: 2px; }
+
+  .dev-modal-logo {
+    width: 46px; height: 46px;
+    margin: 0 auto 8px;
+    border-radius: 13px;
+    background: linear-gradient(145deg, #1E7FD1, #4FCBFF);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-family: 'Almarai', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    box-shadow: 0 8px 22px -6px rgba(37,150,220,.55);
+  }
+  .dev-modal-title {
+    font-family: 'Almarai', sans-serif;
+    font-weight: 800;
+    font-size: 17px;
+    margin: 0;
+    background: linear-gradient(95deg, #2596DC, #57D2FF);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .dev-modal-sub {
+    margin: 2px 0 18px;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: .3px;
+  }
+
+  .dev-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-soft);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 9px 10px;
+    margin-bottom: 9px;
+    text-align: right;
+  }
+  .dev-contact-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dev-contact-icon svg { width: 14px; height: 14px; fill: #fff; }
+  .dev-contact-icon.wa { background: #25D366; }
+  .dev-contact-icon.fb { background: #1877F2; }
+
+  .dev-contact-value {
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: ltr;
+  }
+  .dev-copy-btn {
+    flex-shrink: 0;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #1E7FD1, #4FCBFF);
+    cursor: pointer;
+    transition: transform .15s var(--ease);
+  }
+  .dev-copy-btn:hover { transform: translateY(-1px); }
+  .dev-copy-btn:focus-visible { outline: 2px solid #4FCBFF; outline-offset: 2px; }
+  .dev-copy-btn.copied { background: linear-gradient(135deg, var(--gold-strong), var(--gold)); color: #201607; }
+</style>
+</head>
+<body>
+
+<div class="screen">
+
+  <div class="topbar">
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="تبديل الوضع الداكن/الفاتح">
+      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+      <span id="themeLabel">الوضع الفاتح</span>
+    </button>
+  </div>
+
+  <header class="header">
+    <h1 class="header-title"><span class="gift-badge">🎁</span> مكافآتي</h1>
+    <p class="header-sub">ادعُ أصدقاءك، واربح اشتراكًا مجانيًا!</p>
+  </header>
+
+  <div class="tiers-wrap">
+    <!-- خط النمو الزراعي: العنصر المميّز للتصميم — يربط المستويات الثلاثة
+         بخط ينمو من الأخضر إلى الذهبي، كإشارة لنضج المكافأة مع كل دعوة -->
+    <svg class="vine-svg" viewBox="0 0 320 40" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="vineGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.55" />
+          <stop offset="100%" stop-color="var(--gold)" stop-opacity="0.75" />
+        </linearGradient>
+      </defs>
+      <path d="M 50 18 Q 110 -6 160 18 T 270 18" fill="none" stroke="url(#vineGrad)" stroke-width="2" stroke-dasharray="1 7" stroke-linecap="round" />
+    </svg>
+
+    <div class="tiers">
+      <article class="tier-card" data-tier="1">
+        <span class="tier-node">1</span>
+        <p class="tier-label">دعوة صديق واحد بنجاح</p>
+        <p class="tier-reward">🎁 3 شهور تفعيل مجانًا</p>
+      </article>
+      <article class="tier-card" data-tier="2">
+        <span class="tier-node">2</span>
+        <p class="tier-label">دعوة صديقين بنجاح</p>
+        <p class="tier-reward">🎁 6 شهور تفعيل مجانًا</p>
+      </article>
+      <article class="tier-card" data-tier="3">
+        <span class="tier-node">3</span>
+        <p class="tier-label">دعوة 3 أصدقاء بنجاح</p>
+        <p class="tier-reward">🎁 سنة كاملة تفعيل مجانًا!</p>
+      </article>
+    </div>
+  </div>
+
+  <section class="code-card">
+    <p class="code-title">كود الدعوة الخاص بك</p>
+    <div class="code-row">
+      <div class="code-box" id="codeBox">AGP-4827-XQ</div>
+      <button class="copy-btn" id="copyBtn" type="button">
+        <svg id="copyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="12" height="12" rx="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <span id="copyText">نسخ</span>
+      </button>
+    </div>
+    <ul class="code-meta">
+      <li>يتم إنشاء كود الدعوة تلقائيًا بعد تفعيل البرنامج</li>
+      <li>الكود فريد لكل عميل، ولا يُستخدم نفس الكود لعميلين</li>
+      <li>الكود مرتبط بحساب العميل داخل النظام</li>
+      <li>لا يتم احتساب الدعوات غير الحقيقية أو المكررة</li>
+    </ul>
+  </section>
+
+  <p class="encourage"><strong>كل دعوة ناجحة تقربك من مكافأة أكبر.</strong><br>شارك كودك الآن وابدأ في جمع التفعيل المجاني.</p>
+
+  <hr class="foot-divider" />
+
+  <p class="fineprint">تُحتسب الدعوة بعد تسجيل العميل الجديد وتفعيل البرنامج، ولا تُحتسب الدعوات الوهمية أو المكررة.</p>
+
+  <a class="contact-pill" href="https://wa.me/201037235921" target="_blank" rel="noopener noreferrer">
+    <span class="wa-icon">
+      <svg viewBox="0 0 24 24"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.44 1.32 4.94L2 22l5.28-1.38a9.9 9.9 0 0 0 4.76 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.51 2 12.05 2Zm5.8 14.02c-.24.68-1.4 1.32-1.93 1.4-.5.08-1.12.11-1.8-.11-.42-.13-.95-.31-1.64-.6-2.88-1.24-4.76-4.13-4.9-4.32-.14-.19-1.17-1.56-1.17-2.98s.73-2.11.99-2.4c.26-.28.56-.35.75-.35h.53c.17 0 .4-.03.62.47.24.55.79 1.9.86 2.04.07.14.11.3.02.49-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.29.28-.12.55.17.28.75 1.24 1.62 2 1.11.99 2.05 1.3 2.33 1.44.28.14.44.12.6-.07.17-.19.71-.83.9-1.11.19-.28.38-.24.63-.14.26.09 1.62.76 1.9.9.28.14.47.21.53.33.07.12.07.68-.17 1.36Z"/></svg>
+    </span>
+    <span class="contact-text">
+      <span class="contact-number">010 37235921</span>
+      <span class="contact-label">واتساب فقط</span>
+    </span>
+  </a>
+
+  <div class="dev-credit-wrap">
+    <button class="dev-credit" id="devCreditBtn" type="button">
+      <span class="dev-credit-text">Developed by <strong>Raqnova</strong></span>
+    </button>
+  </div>
+
+</div>
+
+<!-- ── نافذة "تواصل مع المطوّر" ─────────────────────────────── -->
+<div class="dev-modal-overlay" id="devModalOverlay" hidden>
+  <div class="dev-modal" role="dialog" aria-modal="true" aria-labelledby="devModalTitle">
+    <button class="dev-modal-close" id="devModalClose" type="button" aria-label="إغلاق">✕</button>
+    <div class="dev-modal-logo">R</div>
+    <p class="dev-modal-title" id="devModalTitle">Raqnova</p>
+    <p class="dev-modal-sub">Smart Software Solutions</p>
+
+    <div class="dev-contact-row">
+      <span class="dev-contact-icon wa">
+        <svg viewBox="0 0 24 24"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.44 1.32 4.94L2 22l5.28-1.38a9.9 9.9 0 0 0 4.76 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.51 2 12.05 2Zm5.8 14.02c-.24.68-1.4 1.32-1.93 1.4-.5.08-1.12.11-1.8-.11-.42-.13-.95-.31-1.64-.6-2.88-1.24-4.76-4.13-4.9-4.32-.14-.19-1.17-1.56-1.17-2.98s.73-2.11.99-2.4c.26-.28.56-.35.75-.35h.53c.17 0 .4-.03.62.47.24.55.79 1.9.86 2.04.07.14.11.3.02.49-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.29.28-.12.55.17.28.75 1.24 1.62 2 1.11.99 2.05 1.3 2.33 1.44.28.14.44.12.6-.07.17-.19.71-.83.9-1.11.19-.28.38-.24.63-.14.26.09 1.62.76 1.9.9.28.14.47.21.53.33.07.12.07.68-.17 1.36Z"/></svg>
+      </span>
+      <span class="dev-contact-value" id="devWaValue">010 37235921</span>
+      <button class="dev-copy-btn" id="devWaCopy" type="button" data-copy="010 37235921">نسخ</button>
+    </div>
+
+    <div class="dev-contact-row">
+      <span class="dev-contact-icon fb">
+        <svg viewBox="0 0 24 24"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.15 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.51 1.49-3.9 3.77-3.9 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.89h2.78l-.44 2.91h-2.34V22c4.78-.79 8.44-4.94 8.44-9.94Z"/></svg>
+      </span>
+      <span class="dev-contact-value" id="devFbValue">facebook.com/share/1LqfnjBUex</span>
+      <button class="dev-copy-btn" id="devFbCopy" type="button" data-copy="https://www.facebook.com/share/1LqfnjBUex/">نسخ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── تبديل الوضع الداكن / الفاتح ──────────────────────────
+  const root = document.documentElement;
+  const toggleBtn = document.getElementById('themeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+  const themeLabel = document.getElementById('themeLabel');
+
+  const SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  const MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/>';
+
+  function applyTheme(mode) {
+    root.setAttribute('data-theme', mode);
+    if (mode === 'dark') {
+      themeIcon.innerHTML = SUN;
+      themeLabel.textContent = 'الوضع الفاتح';
+    } else {
+      themeIcon.innerHTML = MOON;
+      themeLabel.textContent = 'الوضع الداكن';
+    }
+  }
+  applyTheme('dark');
+
+  toggleBtn.addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+  });
+
+  // ── نسخ كود الدعوة ────────────────────────────────────────
+  const copyBtn = document.getElementById('copyBtn');
+  const copyIcon = document.getElementById('copyIcon');
+  const copyText = document.getElementById('copyText');
+  const codeBox = document.getElementById('codeBox');
+  const CHECK = '<path d="M20 6 9 17l-5-5"/>';
+  const COPY_ICON = copyIcon.innerHTML;
+
+  copyBtn.addEventListener('click', async () => {
+    const code = codeBox.textContent.trim();
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch (e) {
+      // بديل احتياطي في بيئات لا تدعم Clipboard API
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    copyBtn.classList.add('copied');
+    copyIcon.innerHTML = CHECK;
+    copyText.textContent = 'تم النسخ';
+    setTimeout(() => {
+      copyBtn.classList.remove('copied');
+      copyIcon.innerHTML = COPY_ICON;
+      copyText.textContent = 'نسخ';
+    }, 1800);
+  });
+
+  /*
+   * ملاحظة مهمة للمطوّر:
+   * الكود "AGP-4827-XQ" أعلاه ثابت هنا للمعاينة فقط لأن نظام توليد
+   * الكود الحقيقي (مرتبط برقم عميل داخلي + تفعيل فعلي) غير جاهز بعد.
+   * لربطه بالنظام الحقيقي لاحقًا: مرّر الكود الفعلي من حالة التطبيق
+   * وضعه في codeBox.textContent بدل القيمة الثابتة. حتى ذلك الحين لا
+   * مشكلة في النشر بكود تجريبي — الشاشة تعمل وتُنسخ بشكل صحيح دائمًا.
+   */
+
+  // ── نافذة "تواصل مع المطوّر" ──────────────────────────────
+  const devCreditBtn = document.getElementById('devCreditBtn');
+  const devModalOverlay = document.getElementById('devModalOverlay');
+  const devModalClose = document.getElementById('devModalClose');
+
+  function openDevModal() { devModalOverlay.hidden = false; }
+  function closeDevModal() { devModalOverlay.hidden = true; }
+
+  devCreditBtn.addEventListener('click', openDevModal);
+  devModalClose.addEventListener('click', closeDevModal);
+  devModalOverlay.addEventListener('click', (e) => {
+    if (e.target === devModalOverlay) closeDevModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !devModalOverlay.hidden) closeDevModal();
+  });
+
+  async function copyValue(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+  }
+
+  function wireCopyButton(btnId) {
+    const btn = document.getElementById(btnId);
+    const original = btn.textContent;
+    btn.addEventListener('click', async () => {
+      await copyValue(btn.dataset.copy);
+      btn.classList.add('copied');
+      btn.textContent = 'تم ✓';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.textContent = original;
+      }, 1600);
+    });
+  }
+  wireCopyButton('devWaCopy');
+  wireCopyButton('devFbCopy');
+</script>
+
+</body>
+</html>
