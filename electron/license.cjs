@@ -1,13 +1,13 @@
 /**
- * ClinicPro - نظام العيادات — نظام التفعيل بالتوقيع الرقمي (Ed25519 Digital Signature)
+ * Clinic Pro — نظام التفعيل بالتوقيع الرقمي (Ed25519 Digital Signature)
  * ==========================================================================
  * هذا الملف يحتوي على منطق "التحقق فقط" — يُشحن داخل برنامج العميل الخاص
  * بهذا المنتج فقط. لا يحتوي هذا الملف على أي مفتاح خاص (Private Key) أو أي
  * سرّ يمكن استخدامه لتوليد أكواد تفعيل جديدة. المفتاح الخاص يبقى فقط في
- * license-generator/keys/PROD-001/ على جهاز البائع.
+ * license-generator/keys/PROD-005/ على جهاز البائع.
  *
  * هذا الملف مولَّد تلقائياً من أداة تفعيل Agri Plus (قالب موحّد لكل البرامج)
- * بتاريخ 2026-08-07. كل برنامج معزول تماماً عن غيره عبر PRODUCT_ID
+ * بتاريخ 2026-08-16. كل برنامج معزول تماماً عن غيره عبر PRODUCT_ID
  * ومفتاح عام مختلفين: كود هذا البرنامج لن يعمل إطلاقاً على أي برنامج آخر.
  *
  * صيغة كود التفعيل:
@@ -21,10 +21,10 @@ const crypto = require('crypto');
 const os = require('os');
 
 // ─────────────────────────────────────────────────────────────────────────
-const PRODUCT_ID = 'PROD-001';
+const PRODUCT_ID = 'PROD-005';
 
 const PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAu9JUxwk9rGM8d8UoHs/mJuqEQaJSVRsSJyXEsrQnPPw=
+MCowBQYDK2VwAyEADTn9m4MjFh4X+NpsBGRs+Lg084sArgPDQTyb1bkH/ZA=
 -----END PUBLIC KEY-----`;
 
 const CODE_PREFIX = 'AGRI2';
@@ -57,10 +57,7 @@ function verifyLicenseCode(code, currentMachineId) {
     return { valid: false, message: 'كود التفعيل فارغ' };
   }
 
-  // نزيل أي مسافات أو فواصل أسطر في أي مكان (وليس فقط الأطراف) — أكواد
-  // التفعيل الصحيحة لا تحتوي أي مسافات إطلاقاً، وهذه حماية ضد تلف النسخ
-  // واللصق عبر برامج المحادثة التي قد تُدرج فاصل سطر داخل نص طويل
-  const trimmed = code.replace(/\s+/g, '');
+  const trimmed = code.trim();
   const parts = trimmed.split('.');
   if (parts.length !== 3 || parts[0] !== CODE_PREFIX) {
     return { valid: false, message: 'صيغة كود التفعيل غير صحيحة' };
