@@ -103,7 +103,7 @@ function getStatus(userDataDir) {
 /** محاولة تفعيل بكود أدخله العميل — يعمل دائماً بغض النظر عن حالة الحظر */
 function activate(userDataDir, code) {
   const machineId = license.getMachineId();
-  const trimmed = String(code || '').trim();
+  const trimmed = String(code || '').replace(/\s+/g, '');
   const check = license.verifyLicenseCode(trimmed, machineId);
   if (!check.valid) {
     return { success: false, message: check.message };

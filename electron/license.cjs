@@ -57,7 +57,10 @@ function verifyLicenseCode(code, currentMachineId) {
     return { valid: false, message: 'كود التفعيل فارغ' };
   }
 
-  const trimmed = code.trim();
+  // نزيل أي مسافات أو فواصل أسطر في أي مكان (وليس فقط الأطراف) — أكواد
+  // التفعيل الصحيحة لا تحتوي أي مسافات إطلاقاً، وهذه حماية ضد تلف النسخ
+  // واللصق عبر برامج المحادثة التي قد تُدرج فاصل سطر داخل نص طويل
+  const trimmed = code.replace(/\s+/g, '');
   const parts = trimmed.split('.');
   if (parts.length !== 3 || parts[0] !== CODE_PREFIX) {
     return { valid: false, message: 'صيغة كود التفعيل غير صحيحة' };
