@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Download, Upload, Palette, Image, ShieldCheck } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Download, Upload, Palette, Image, ShieldCheck, FolderCog } from "lucide-react"
 import { useApp } from "../context/AppContext"
 import { useLicense } from "../context/LicenseContext"
 import ActivationForm from "../components/ActivationForm"
@@ -14,6 +14,9 @@ declare global {
       listBackups: () => Promise<{ success: boolean; files?: any[]; dir?: string; error?: string }>
       getAppVersion: () => Promise<string>
       onAppClosing: (cb: () => void) => void
+      selectBackupFolder: () => Promise<{ success: boolean; folderPath?: string; canceled?: boolean }>
+      backupToFolder: (data: any, folderPath: string) => Promise<{ success: boolean; path?: string; error?: string }>
+      listFolderBackups: (folderPath: string) => Promise<{ success: boolean; files?: any[]; error?: string }>
     }
   }
 }
@@ -22,6 +25,8 @@ export default function SettingsPage() {
   const { settings, updateSettings, data, replaceData } = useApp()
   const license = useLicense()
   const [msg, setMsg] = useState("")
+  const [folderBackupCount, setFolderBackupCount] = useState<number | null>(null)
+  const backupAvailable = typeof window !== "undefined" && !!window.electronAPI?.selectBackupFolder
   const [importPreview, setImportPreview] = useState<{
     data: any
     clinicName: string
@@ -32,6 +37,30 @@ export default function SettingsPage() {
     cancelledCount: number
     schemaVersion?: number | string
   } | null>(null)
+
+  useEffect(() => {
+    if (settings.backupFolder && window.electronAPI?.listFolderBackups) {
+      window.electronAPI.listFolderBackups(settings.backupFolder).then(res => {
+        setFolderBackupCount(res.success ? (res.files?.length ?? 0) : null)
+      }).catch(() => setFolderBackupCount(null))
+    } else {
+      setFolderBackupCount(null)
+    }
+  }, [settings.backupFolder])
+
+  const handleChooseBackupFolder = async () => {
+    if (!window.electronAPI?.selectBackupFolder) return
+    const res = await window.electronAPI.selectBackupFolder()
+    if (res.success && res.folderPath) {
+      updateSettings({ backupFolder: res.folderPath })
+      // نسخة فورية أول ما يتم اختيار المجلد، بدل انتظار اليوم التالي
+      const backupRes = await window.electronAPI.backupToFolder?.(data, res.folderPath)
+      if (backupRes?.success) {
+        setMsg("تم اختيار المجلد وحفظ أول نسخة احتياطية بنجاح")
+        setTimeout(() => setMsg(""), 3000)
+      }
+    }
+  }
 
   const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -230,7 +259,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card mb-4">
         <h3 className="section-title">النسخ الاحتياطي (JSON)</h3>
         <p className="text-muted text-sm mb-4">
           صدّر نسخة كاملة لحماية بياناتك، أو استورد نسخة سابقة عند الحاجة.
@@ -243,6 +272,37 @@ export default function SettingsPage() {
             <Upload size={18} /> استيراد JSON
           </button>
         </div>
+      </div>
+
+      <div className="card mb-4">
+        <h3 className="section-title"><FolderCog size={18} /> النسخ الاحتياطي التلقائي اليومي</h3>
+        <p className="text-muted text-sm mb-4">
+          اختر مجلدًا على جهازك، ويقوم البرنامج تلقائيًا بحفظ نسخة كاملة من كل بياناتك فيه مرة كل يوم.
+          يحذف البرنامج تلقائيًا النسخ الأقدم من 14 يومًا، لكنه يتوقف عن الحذف إن قلّ عدد النسخ المتبقية عن 5 — حماية إضافية تحافظ دائمًا على 5 نسخ على الأقل مهما كان عمرها.
+        </p>
+
+        {!backupAvailable ? (
+          <p className="text-muted text-sm">هذه الميزة متاحة فقط في نسخة سطح المكتب.</p>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-4" style={{ flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div className="text-sm text-muted">المجلد الحالي</div>
+                <div className="font-bold" style={{ wordBreak: "break-all" }}>
+                  {settings.backupFolder || "لم يتم التحديد بعد"}
+                </div>
+              </div>
+              <button className="btn btn-primary" onClick={handleChooseBackupFolder}>
+                <FolderCog size={16} /> {settings.backupFolder ? "تغيير المجلد" : "اختيار مجلد"}
+              </button>
+            </div>
+            {settings.backupFolder && (
+              <p className="text-sm text-muted">
+                عدد النسخ المحفوظة حاليًا في هذا المجلد: <strong>{folderBackupCount ?? "..."}</strong>
+              </p>
+            )}
+          </>
+        )}
       </div>
 
       <div className="card mb-4">

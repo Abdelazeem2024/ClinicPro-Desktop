@@ -77,6 +77,8 @@ export interface ClinicSettings {
   defaultFee: number;
   defaultRevisitFee: number;
   autoPrintTicket: boolean;
+  /** مسار مجلد على جهاز المستخدم يتم فيه حفظ نسخة احتياطية تلقائية يوميًا */
+  backupFolder: string;
 }
 
 export interface AppData {
@@ -93,11 +95,12 @@ export const DEFAULT_SETTINGS: ClinicSettings = {
   logo: '',
   primaryColor: '#0A7CFF',
   backgroundColor: '',
-  theme: 'auto',
+  theme: 'dark',
   reportsPassword: '1234',
   defaultFee: 100,
   defaultRevisitFee: 50,
-  autoPrintTicket: false
+  autoPrintTicket: false,
+  backupFolder: ''
 };
 
 export const APP_VERSION = '1.1.0';

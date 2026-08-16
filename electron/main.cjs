@@ -80,6 +80,60 @@ function ensureDailyBackup(data) {
   }
 }
 
+const EXTERNAL_BACKUP_PREFIX = 'clinicpro-backup-';
+const RETENTION_DAYS = 14;
+const MIN_KEEP_BACKUPS = 5;
+
+/**
+ * حذف النسخ الأقدم من 14 يومًا من المجلد الخارجي الذي اختاره المستخدم،
+ * بشرط ألا يقل العدد المتبقي عن 5 نسخ مهما كان عمرها. نبدأ بالأقدم أولًا.
+ */
+function pruneExternalBackups(folderPath) {
+  try {
+    const files = fs
+      .readdirSync(folderPath)
+      .filter(f => f.startsWith(EXTERNAL_BACKUP_PREFIX) && f.endsWith('.json'))
+      .map(f => ({ name: f, mtime: fs.statSync(path.join(folderPath, f)).mtime.getTime() }))
+      .sort((a, b) => b.mtime - a.mtime); // الأحدث أولًا
+
+    const now = Date.now();
+    const maxAgeMs = RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+    for (let i = files.length - 1; i >= 0; i--) {
+      if (files.length <= MIN_KEEP_BACKUPS) break; // لا تحذف تحت الحد الأدنى أبدًا
+      const f = files[i];
+      if (now - f.mtime > maxAgeMs) {
+        try {
+          fs.unlinkSync(path.join(folderPath, f.name));
+          files.splice(i, 1);
+        } catch (_) {}
+      }
+    }
+  } catch (_) {
+    // تجاهل بصمت (مثلاً المجلد أصبح غير متاح مؤقتًا كفلاشة مفصولة)
+  }
+}
+
+/** نسخة احتياطية يومية إلى مجلد يختاره المستخدم على جهازه */
+function backupToExternalFolder(data, folderPath) {
+  try {
+    if (!folderPath || !fs.existsSync(folderPath)) {
+      return { success: false, error: 'المجلد المحدد غير موجود أو غير متاح حاليًا.' };
+    }
+    const fileName = `${EXTERNAL_BACKUP_PREFIX}${localDateStr()}-${localTimeStr()}.json`;
+    const filePath = path.join(folderPath, fileName);
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify({ ...data, exportedAt: new Date().toISOString(), backupType: 'external-daily' }, null, 2),
+      'utf-8'
+    );
+    pruneExternalBackups(folderPath);
+    return { success: true, path: filePath };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -191,6 +245,38 @@ ipcMain.handle('list-backups', async () => {
 });
 
 ipcMain.handle('get-app-version', () => app.getVersion());
+
+// ── النسخ الاحتياطي التلقائي لمجلد خارجي يختاره المستخدم ──────────────────
+ipcMain.handle('select-backup-folder', async () => {
+  const { filePaths, canceled } = await dialog.showOpenDialog(mainWindow, {
+    title: 'اختر مجلد النسخ الاحتياطي التلقائي',
+    properties: ['openDirectory', 'createDirectory']
+  });
+  if (canceled || !filePaths?.length) return { success: false, canceled: true };
+  return { success: true, folderPath: filePaths[0] };
+});
+
+ipcMain.handle('backup-to-folder', async (_event, { data, folderPath }) => {
+  return backupToExternalFolder(data, folderPath);
+});
+
+ipcMain.handle('list-folder-backups', async (_event, folderPath) => {
+  try {
+    if (!folderPath || !fs.existsSync(folderPath)) return { success: true, files: [] };
+    const files = fs
+      .readdirSync(folderPath)
+      .filter(f => f.startsWith(EXTERNAL_BACKUP_PREFIX) && f.endsWith('.json'))
+      .map(f => {
+        const full = path.join(folderPath, f);
+        const st = fs.statSync(full);
+        return { name: f, size: st.size, mtime: st.mtime.toISOString() };
+      })
+      .sort((a, b) => (a.mtime < b.mtime ? 1 : -1));
+    return { success: true, files };
+  } catch (err) {
+    return { success: false, error: err.message, files: [] };
+  }
+});
 
 // ── الترخيص والتفعيل ──────────────────────────────────────────────────────
 ipcMain.handle('license-get-status', () => {

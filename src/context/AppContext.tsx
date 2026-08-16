@@ -72,6 +72,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(dailyKey, today);
     }
 
+    // نسخة يومية إلى المجلد الخارجي الذي اختاره المستخدم (إن كان مُفعّلاً)
+    const externalDailyKey = 'clinic-pro-daily-external-backup-date';
+    if (data.settings.backupFolder && localStorage.getItem(externalDailyKey) !== today) {
+      window.electronAPI?.backupToFolder?.(data, data.settings.backupFolder).then(() => {
+        localStorage.setItem(externalDailyKey, today);
+      }).catch(() => {});
+    }
+
     // قبل إغلاق التبويب/النافذة
     const onBeforeUnload = () => { runBackup(); };
     window.addEventListener('beforeunload', onBeforeUnload);

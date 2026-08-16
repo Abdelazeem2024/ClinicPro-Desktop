@@ -251,3 +251,42 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .dev-credit-shimmer { animation: none; }
 }
+
+/* ── صفحة دخول مريض: خطوات مرقّمة وبطاقات محسّنة ─────────── */
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.step-badge-muted { background: var(--text-muted); opacity: .6; }
+
+.patient-suggestion {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background .15s ease;
+}
+.patient-suggestion:last-child { border-bottom: none; }
+.patient-suggestion:hover { background: var(--bg-elevated); }
+
+.selected-patient-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}

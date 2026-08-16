@@ -8,7 +8,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   onAppClosing: (cb) => {
     ipcRenderer.on('app-closing', () => cb());
-  }
+  },
+  selectBackupFolder: () => ipcRenderer.invoke('select-backup-folder'),
+  backupToFolder: (data, folderPath) => ipcRenderer.invoke('backup-to-folder', { data, folderPath }),
+  listFolderBackups: (folderPath) => ipcRenderer.invoke('list-folder-backups', folderPath)
 });
 
 contextBridge.exposeInMainWorld('licenseAPI', {

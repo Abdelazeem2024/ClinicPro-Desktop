@@ -1,12 +1,12 @@
-import { useState } from "react"
-import { UserPlus, Search, Check } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { UserPlus, Search, Check, X, Phone, History } from "lucide-react"
 import { useApp } from "../context/AppContext"
 import type { Patient, VisitType, VisitStatus } from "../types"
 import { STATUS_LABELS } from "../types"
 import { printQueueTicket } from "../utils/printTicket"
 
 export default function VisitPage() {
-  const { patients, addPatient, addVisit, settings, todayVisits, updateVisit, cancelVisit, findPatients } = useApp()
+  const { patients, visits, addPatient, addVisit, settings, todayVisits, updateVisit, cancelVisit, findPatients } = useApp()
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState<Patient | null>(null)
   const [type, setType] = useState<VisitType>("كشف")
@@ -18,14 +18,27 @@ export default function VisitPage() {
   const [lastVisit, setLastVisit] = useState<{ queueNumber: number; patientName: string; remaining: number } | null>(null)
   const [cancelTarget, setCancelTarget] = useState<{ id: string; name: string; queue: number } | null>(null)
   const [cancelReason, setCancelReason] = useState("")
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  // تركيز تلقائي على البحث عند فتح الصفحة — أسرع لموظف الاستقبال
+  useEffect(() => {
+    searchRef.current?.focus()
+  }, [])
 
   const suggestions = query.trim() ? findPatients(query) : []
+  const patientVisitCount = selected ? visits.filter(v => v.patientId === selected.id && v.status !== "cancelled").length : 0
 
   const handleSelect = (p: Patient) => {
     setSelected(p)
     setQuery(p.name)
     setFee(type === "كشف" ? settings.defaultFee : settings.defaultRevisitFee)
     setPaid(type === "كشف" ? settings.defaultFee : settings.defaultRevisitFee)
+  }
+
+  const clearSelection = () => {
+    setSelected(null)
+    setQuery("")
+    searchRef.current?.focus()
   }
 
   const handleTypeChange = (t: VisitType) => {
@@ -54,6 +67,7 @@ export default function VisitPage() {
     if (shouldPrint || settings.autoPrintTicket) {
       printQueueTicket({
         clinicName: settings.clinicName || "العيادة",
+        logo: settings.logo,
         queueNumber: visit.queueNumber,
         remaining: remaining,
         message: "يرجى الانتظار حتى يتم النداء"
@@ -66,6 +80,7 @@ export default function VisitPage() {
     setType("كشف")
     setFee(settings.defaultFee)
     setPaid(settings.defaultFee)
+    searchRef.current?.focus()
   }
 
   const handleQuickNew = () => {
@@ -87,86 +102,130 @@ export default function VisitPage() {
       <h2 className="page-title">دخول مريض / الطابور</h2>
 
       <div className="card mb-4">
-        <h3 className="section-title">تسجيل دخول</h3>
-        <div className="form-group">
-          <label>البحث عن المريض</label>
-          <div className="search-box" style={{ maxWidth: "100%" }}>
-            <Search size={16} className="search-icon" />
-            <input
-              className="input"
-              style={{ paddingRight: 42 }}
-              value={query}
-              onChange={e => { setQuery(e.target.value); setSelected(null) }}
-              placeholder="اكتب اسم المريض..."
-            />
-          </div>
-          {suggestions.length > 0 && !selected && (
-            <div style={{ marginTop: 8, border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
-              {suggestions.slice(0, 6).map(p => (
-                <div
-                  key={p.id}
-                  onClick={() => handleSelect(p)}
-                  style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid var(--border)" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-elevated)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                >
-                  <div className="font-bold">{p.name}</div>
-                  <div className="text-sm text-muted">{p.phone}</div>
+        <h3 className="section-title">
+          <span className="step-badge">1</span> اختيار المريض
+        </h3>
+
+        {!selected ? (
+          <>
+            <div className="form-group" style={{ marginBottom: 10 }}>
+              <div className="search-box" style={{ maxWidth: "100%" }}>
+                <Search size={16} className="search-icon" />
+                <input
+                  ref={searchRef}
+                  className="input"
+                  style={{ paddingRight: 42, fontSize: 15 }}
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && suggestions.length > 0) handleSelect(suggestions[0])
+                    if (e.key === "Escape") setQuery("")
+                  }}
+                  placeholder="اكتب اسم المريض أو رقم الهاتف..."
+                />
+              </div>
+              {suggestions.length > 0 && (
+                <div style={{ marginTop: 8, border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+                  {suggestions.slice(0, 6).map(p => (
+                    <div
+                      key={p.id}
+                      onClick={() => handleSelect(p)}
+                      className="patient-suggestion"
+                    >
+                      <div>
+                        <div className="font-bold">{p.name}</div>
+                        <div className="text-sm text-muted">{p.phone || "بدون رقم هاتف"}</div>
+                      </div>
+                      <span className="text-sm text-muted">اختيار ←</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+              {query.trim() && suggestions.length === 0 && !showNew && (
+                <p className="text-sm text-muted mt-2">لا يوجد مريض بهذا الاسم.</p>
+              )}
             </div>
-          )}
-        </div>
 
-        {!selected && (
-          <button className="btn btn-secondary" onClick={() => setShowNew(true)}>
-            <UserPlus size={16} /> مريض جديد سريع
-          </button>
-        )}
-
-        {showNew && (
-          <div className="mt-4" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <input className="input" style={{ flex: 1, minWidth: 160 }} placeholder="الاسم" value={newName} onChange={e => setNewName(e.target.value)} />
-            <input className="input" style={{ flex: 1, minWidth: 120 }} placeholder="الهاتف" value={newPhone} onChange={e => setNewPhone(e.target.value)} />
-            <button className="btn btn-primary" onClick={handleQuickNew}>حفظ واختيار</button>
-          </div>
-        )}
-
-        {selected && (
-          <div className="mt-4">
-            <div className="alert alert-success mb-4">تم اختيار: {selected.name}</div>
-            <div className="grid-2">
-              <div className="form-group">
-                <label>نوع الزيارة</label>
-                <div className="flex gap-2">
-                  <button className={`btn ${type === "كشف" ? "btn-primary" : "btn-secondary"}`} onClick={() => handleTypeChange("كشف")}>كشف</button>
-                  <button className={`btn ${type === "إعادة" ? "btn-primary" : "btn-secondary"}`} onClick={() => handleTypeChange("إعادة")}>إعادة</button>
-                </div>
-              </div>
-              <div className="form-group">
-                <label>قيمة الكشف</label>
-                <input className="input" type="number" value={fee} onChange={e => setFee(Number(e.target.value))} />
-              </div>
-              <div className="form-group">
-                <label>المدفوع</label>
-                <input className="input" type="number" value={paid} onChange={e => setPaid(Number(e.target.value))} />
-              </div>
-              <div className="form-group">
-                <label>المتبقي</label>
-                <input className="input" value={Math.max(0, fee - paid)} disabled />
-              </div>
-            </div>
-            <div className="flex gap-2 mt-4" style={{ flexWrap: "wrap" }}>
-              <button className="btn btn-primary btn-lg" onClick={() => handleSubmit(false)}>
-                <Check size={18} /> تسجيل الدخول للطابور
+            {!showNew ? (
+              <button className="btn btn-secondary" onClick={() => { setShowNew(true); setNewName(query) }}>
+                <UserPlus size={16} /> تسجيل مريض جديد سريع
               </button>
-              <button className="btn btn-success btn-lg" onClick={() => handleSubmit(true)}>
-                تسجيل + طباعة تذكرة الدور
-              </button>
+            ) : (
+              <div className="mt-2" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                <input className="input" style={{ flex: 1, minWidth: 160 }} placeholder="الاسم" value={newName} onChange={e => setNewName(e.target.value)} autoFocus />
+                <input className="input" style={{ flex: 1, minWidth: 120 }} placeholder="الهاتف (اختياري)" value={newPhone} onChange={e => setNewPhone(e.target.value)} />
+                <button className="btn btn-primary" onClick={handleQuickNew} disabled={!newName.trim()}>حفظ واختيار</button>
+                <button className="btn btn-ghost btn-icon" onClick={() => setShowNew(false)}><X size={16} /></button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="selected-patient-card">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="flex items-center gap-2">
+                <Check size={16} color="var(--success)" />
+                <span className="font-bold" style={{ fontSize: 16 }}>{selected.name}</span>
+              </div>
+              <div className="text-sm text-muted mt-1" style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <Phone size={13} /> {selected.phone || "بدون رقم"}
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <History size={13} /> {patientVisitCount === 0 ? "مريض جديد" : `زيارة رقم ${patientVisitCount + 1}`}
+                </span>
+              </div>
             </div>
+            <button className="btn btn-ghost" onClick={clearSelection}>تغيير</button>
           </div>
         )}
       </div>
+
+      {selected && (
+        <div className="card mb-4">
+          <h3 className="section-title">
+            <span className="step-badge">2</span> تفاصيل الزيارة
+          </h3>
+          <div className="grid-2">
+            <div className="form-group">
+              <label>نوع الزيارة</label>
+              <div className="flex gap-2">
+                <button className={`btn ${type === "كشف" ? "btn-primary" : "btn-secondary"}`} style={{ flex: 1 }} onClick={() => handleTypeChange("كشف")}>كشف</button>
+                <button className={`btn ${type === "إعادة" ? "btn-primary" : "btn-secondary"}`} style={{ flex: 1 }} onClick={() => handleTypeChange("إعادة")}>إعادة</button>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>قيمة الكشف</label>
+              <input className="input" type="number" value={fee} onChange={e => setFee(Number(e.target.value))} />
+            </div>
+            <div className="form-group">
+              <label>المدفوع</label>
+              <div className="flex gap-2">
+                <input className="input" type="number" value={paid} onChange={e => setPaid(Number(e.target.value))} />
+                <button className="btn btn-secondary" style={{ whiteSpace: "nowrap" }} onClick={() => setPaid(fee)} title="تسجيل المبلغ كاملاً كمدفوع">
+                  دفع كامل
+                </button>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>المتبقي</label>
+              <input
+                className="input"
+                value={Math.max(0, fee - paid)}
+                disabled
+                style={{ color: fee - paid > 0 ? "var(--warning)" : "var(--success)", fontWeight: 700 }}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4" style={{ flexWrap: "wrap" }}>
+            <button className="btn btn-primary btn-lg" onClick={() => handleSubmit(false)}>
+              <Check size={18} /> تسجيل الدخول للطابور
+            </button>
+            <button className="btn btn-success btn-lg" onClick={() => handleSubmit(true)}>
+              تسجيل + طباعة تذكرة الدور
+            </button>
+          </div>
+        </div>
+      )}
 
       {lastVisit && (
         <div className="card mb-4" style={{ borderColor: "var(--primary)", borderWidth: 2 }}>
@@ -184,6 +243,7 @@ export default function VisitPage() {
               className="btn btn-primary btn-lg"
               onClick={() => printQueueTicket({
                 clinicName: settings.clinicName || "العيادة",
+                logo: settings.logo,
                 queueNumber: lastVisit.queueNumber,
                 remaining: lastVisit.remaining,
                 message: "يرجى الانتظار حتى يتم النداء"
@@ -196,7 +256,9 @@ export default function VisitPage() {
       )}
 
       <div className="card">
-        <h3 className="section-title">طابور اليوم ({todayVisits.filter(v => v.status !== "cancelled").length})</h3>
+        <h3 className="section-title">
+          <span className="step-badge step-badge-muted">{selected ? "3" : "2"}</span> طابور اليوم ({todayVisits.filter(v => v.status !== "cancelled").length})
+        </h3>
         <div className="queue-list">
           {todayVisits.filter(v => v.status !== "cancelled").length === 0 ? (
             <div className="empty-state"><p>الطابور فارغ</p></div>
@@ -227,6 +289,7 @@ export default function VisitPage() {
                     ).length
                     printQueueTicket({
                       clinicName: settings.clinicName || "العيادة",
+                      logo: settings.logo,
                       queueNumber: v.queueNumber,
                       remaining: before,
                       message: "يرجى الانتظار حتى يتم النداء"

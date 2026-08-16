@@ -46,6 +46,28 @@ export default function DevCredit() {
 
   return (
     <>
+      <a
+        href="https://wa.me/201037235921"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+          background: "var(--bg-elevated)", border: "1px solid var(--border)",
+          borderRadius: 999, padding: "7px 10px", marginBottom: 4,
+          textDecoration: "none", fontSize: 12
+        }}
+      >
+        <span style={{
+          width: 20, height: 20, borderRadius: "50%", background: "#25D366",
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+        }}>
+          <svg viewBox="0 0 24 24" width={11} height={11} fill="#fff"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.44 1.32 4.94L2 22l5.28-1.38a9.9 9.9 0 0 0 4.76 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.51 2 12.05 2Zm5.8 14.02c-.24.68-1.4 1.32-1.93 1.4-.5.08-1.12.11-1.8-.11-.42-.13-.95-.31-1.64-.6-2.88-1.24-4.76-4.13-4.9-4.32-.14-.19-1.17-1.56-1.17-2.98s.73-2.11.99-2.4c.26-.28.56-.35.75-.35h.53c.17 0 .4-.03.62.47.24.55.79 1.9.86 2.04.07.14.11.3.02.49-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.29.28-.12.55.17.28.75 1.24 1.62 2 1.11.99 2.05 1.3 2.33 1.44.28.14.44.12.6-.07.17-.19.71-.83.9-1.11.19-.28.38-.24.63-.14.26.09 1.62.76 1.9.9.28.14.47.21.53.33.07.12.07.68-.17 1.36Z" /></svg>
+        </span>
+        <span style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--text-main)", direction: "ltr" }}>
+          010 37235921
+        </span>
+      </a>
+
       <button
         onClick={() => setOpen(true)}
         style={{

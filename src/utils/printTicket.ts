@@ -7,6 +7,8 @@ export interface TicketData {
   queueNumber: number;
   remaining: number; // عدد المنتظرين قبله
   message?: string;
+  /** شعار العيادة (Data URL) — يُستخدم كعلامة مائية شفافة خلف التذكرة */
+  logo?: string;
 }
 
 export function printQueueTicket(data: TicketData): void {
@@ -14,7 +16,8 @@ export function printQueueTicket(data: TicketData): void {
     clinicName,
     queueNumber,
     remaining,
-    message = 'يرجى الانتظار حتى يتم النداء'
+    message = 'يرجى الانتظار حتى يتم النداء',
+    logo
   } = data;
 
   const printWindow = window.open('', '_blank', 'width=400,height=600');
@@ -47,6 +50,22 @@ export function printQueueTicket(data: TicketData): void {
     }
     .ticket {
       width: 100%;
+      position: relative;
+    }
+    .watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 70%;
+      max-width: 65mm;
+      opacity: 0.08;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .ticket-content {
+      position: relative;
+      z-index: 1;
     }
     .clinic-name {
       font-size: 16px;
@@ -110,16 +129,19 @@ export function printQueueTicket(data: TicketData): void {
 </head>
 <body>
   <div class="ticket">
-    <div class="clinic-name">${escapeHtml(clinicName)}</div>
-    <hr class="divider" />
-    <div class="label">رقم الدور</div>
-    <div class="queue-number">${queueNumber}</div>
-    <hr class="divider" />
-    <div class="remaining">
-      المتبقي على دورك: <span>${remaining}</span>
+    ${logo ? `<img class="watermark" src="${escapeHtml(logo)}" alt="" />` : ''}
+    <div class="ticket-content">
+      <div class="clinic-name">${escapeHtml(clinicName)}</div>
+      <hr class="divider" />
+      <div class="label">رقم الدور</div>
+      <div class="queue-number">${queueNumber}</div>
+      <hr class="divider" />
+      <div class="remaining">
+        المتبقي على دورك: <span>${remaining}</span>
+      </div>
+      <div class="message">${escapeHtml(message)}</div>
+      <div class="footer-line">Clinic Pro</div>
     </div>
-    <div class="message">${escapeHtml(message)}</div>
-    <div class="footer-line">Clinic Pro</div>
   </div>
   <script>
     window.onload = function() {

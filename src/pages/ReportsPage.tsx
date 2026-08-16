@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Lock, Unlock, Eye, EyeOff } from "lucide-react"
+import { Lock, Unlock, Eye, EyeOff, Repeat, ChevronDown, ChevronUp } from "lucide-react"
 import { useApp } from "../context/AppContext"
 import { STATUS_LABELS } from "../types"
 
@@ -15,6 +15,8 @@ export default function ReportsPage() {
   const [confirmPass, setConfirmPass] = useState("")
   const [dateFrom, setDateFrom] = useState(() => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` })
   const [dateTo, setDateTo] = useState(() => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` })
+  const [expandedPatient, setExpandedPatient] = useState<string | null>(null)
+  const [minVisits, setMinVisits] = useState(2)
 
   const handleUnlock = () => {
     if (password === settings.reportsPassword) {
@@ -87,6 +89,25 @@ export default function ReportsPage() {
   const exams = filtered.filter(v => v.type === "كشف").length
   const revisits = filtered.filter(v => v.type === "إعادة").length
   const revenue = filtered.reduce((s, v) => s + (v.paid || 0), 0)
+
+  // تقرير المترددين: تجميع كل زيارات كل مريض عبر كل الأوقات (غير مرتبط بفلتر التاريخ أعلاه)
+  const visitsByPatient = new Map<string, { name: string; visits: typeof visits }>()
+  for (const v of visits) {
+    if (v.status === "cancelled") continue
+    if (!visitsByPatient.has(v.patientId)) {
+      visitsByPatient.set(v.patientId, { name: v.patientName, visits: [] })
+    }
+    visitsByPatient.get(v.patientId)!.visits.push(v)
+  }
+  const frequentVisitors = Array.from(visitsByPatient.entries())
+    .map(([patientId, d]) => ({
+      patientId,
+      name: d.name,
+      count: d.visits.length,
+      visits: d.visits.slice().sort((a, b) => (a.date + a.time > b.date + b.time ? -1 : 1))
+    }))
+    .filter(p => p.count >= minVisits)
+    .sort((a, b) => b.count - a.count)
 
   return (
     <div>
@@ -167,6 +188,74 @@ export default function ReportsPage() {
             ))
           )}
         </div>
+      </div>
+
+      <div className="card mt-4">
+        <div className="flex items-center justify-between mb-4" style={{ flexWrap: "wrap", gap: 10 }}>
+          <h3 className="section-title" style={{ marginBottom: 0 }}>
+            <Repeat size={17} /> المترددون على العيادة
+          </h3>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted">إظهار من زار</label>
+            <select
+              className="select"
+              style={{ width: 90 }}
+              value={minVisits}
+              onChange={e => setMinVisits(Number(e.target.value))}
+            >
+              <option value={1}>مرة+</option>
+              <option value={2}>مرتين+</option>
+              <option value={3}>3 مرات+</option>
+              <option value={5}>5 مرات+</option>
+            </select>
+          </div>
+        </div>
+
+        {frequentVisitors.length === 0 ? (
+          <div className="empty-state"><p>لا يوجد مرضى يطابقون هذا العدد من الزيارات بعد</p></div>
+        ) : (
+          <div className="queue-list">
+            {frequentVisitors.map(p => {
+              const isOpen = expandedPatient === p.patientId
+              return (
+                <div key={p.patientId}>
+                  <div
+                    className="queue-item"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setExpandedPatient(isOpen ? null : p.patientId)}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div className="font-bold">{p.name}</div>
+                      <div className="text-sm text-muted">آخر زيارة: {p.visits[0]?.date}</div>
+                    </div>
+                    <span className="status-badge" style={{ background: "var(--primary)", color: "#fff" }}>
+                      {p.count} {p.count === 1 ? "زيارة" : "زيارات"}
+                    </span>
+                    {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </div>
+                  {isOpen && (
+                    <div style={{ padding: "6px 16px 14px", display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {p.visits.map(v => (
+                        <span
+                          key={v.id}
+                          className="text-sm"
+                          style={{
+                            background: "var(--bg-elevated)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 999,
+                            padding: "4px 12px"
+                          }}
+                        >
+                          {v.date} • {v.type}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

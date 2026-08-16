@@ -81,7 +81,8 @@ export default function App() {
           display: "flex",
           flexDirection: "column",
           gap: 6,
-          flexShrink: 0
+          flexShrink: 0,
+          overflowY: "auto"
         }}>
           {navItems.map(item => (
             <button
